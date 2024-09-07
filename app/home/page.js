@@ -6,12 +6,14 @@ import { auth, db } from "../lib/firebase";
 import SearchBar from "../components/searchbar";
 import DiscussionCard from "../components/discusstioncard";
 import {
-  Stack,
+  Grid,
   Typography,
   Avatar,
   TextField,
   Box,
   Button,
+  Switch,
+  Stack
 } from "@mui/material";
 import Navbarloggedin from "../components/navbarloggedin";
 import DiscussionPost from "../components/DiscussionPost";
@@ -21,10 +23,8 @@ import {
   uploadProfilePicture,
 } from "../firebasefunctions/userdata";
 import { useGetDiscussionPosts } from "../firebasefunctions/poststorage";
-import { useAuthRedirect } from "../firebasefunctions/auth";
-
+import { useAuthRedirect } from "../components/useauthredirect";
 export default function Home() {
-  useAuthRedirect();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
@@ -38,12 +38,14 @@ export default function Home() {
     school: "",
     age: "",
   });
+  const { isAuthenticated, loading:authloading } = useAuthRedirect();
   const [open, setOpen] = useState(false);
   const [localDiscussions, setLocalDiscussions] = useState([]);
   const [users, setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [darkMode, setDarkMode] = useState(false); 
   const fileInputRef = useRef(null);
 
+  // Fetch users from Firestore
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -61,28 +63,13 @@ export default function Home() {
     fetchUsers();
   }, []);
 
-  useEffect(() => {
-    if (searchTerm) {
-      const filtered = users.filter((user) =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.school?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredUsers(filtered);
-    } else {
-      setFilteredUsers([]); // Clear the filtered users when there's no search term
-    }
-  }, [users, searchTerm]);
 
+  // Filter discussions based on search term
   useEffect(() => {
-    const filteredDiscussions = discussions.filter((discussion) =>
-      discussion.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      discussion.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      discussion.school?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setLocalDiscussions(filteredDiscussions);
-  }, [discussions, searchTerm]);
+    setLocalDiscussions(discussions);
+  }, [discussions]);
 
+  // Fetch user profile from Firebase Auth
   useEffect(() => {
     const fetchUserProfile = async () => {
       const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -102,13 +89,6 @@ export default function Home() {
 
     fetchUserProfile();
   }, []);
-
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
-
-  const handleEditToggle = () => {
-    setIsEditing(!isEditing);
-  };
 
   const handleSaveProfile = async () => {
     try {
@@ -157,6 +137,10 @@ export default function Home() {
     }));
   };
 
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+  const toggleDarkMode = () => setDarkMode(!darkMode);
+
   if (loading || discussionsLoading) {
     return <div>Loading...</div>;
   }
@@ -165,39 +149,78 @@ export default function Home() {
     return <div>No user profile found.</div>;
   }
 
+
+
+
+  // Filter users based on search term
+  const filteredUsers = users.filter((user) =>
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.school?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (!isAuthenticated) {
+    return null; // This is a safeguard; user will be redirected if not authenticated
+  }
+
   return (
-    <div style={{ padding: "20px" }}>
+    <Box
+      sx={{
+        padding: 2,
+        backgroundColor: darkMode ? "#121212" : "#fff",
+        color: darkMode ? "#fff" : "#000",
+      }}
+    >
       <Navbarloggedin />
+      <Box display="flex" justifyContent="flex-end" padding={2}>
+        <Typography>Dark Mode</Typography>
+        <Switch checked={darkMode} onChange={toggleDarkMode} />
+      </Box>
       <SearchBar onSearch={setSearchTerm} />
-      <Stack direction={"row"} justifyContent={"space-between"} padding={10}>
-        <Stack spacing={5} marginLeft={25} alignItems={"center"}>
-          <Stack spacing={2} marginTop={4}>
-            {filteredUsers.length > 0 ? (
+
+      <Grid container spacing={2} padding={2}>
+        {/* Left side: Discussions and Users */}
+        <Grid item xs={12} md={8}>
+          <Box sx={{ padding: { xs: 2, sm: 5 }, marginBottom: 4 }}>
+            {searchTerm && filteredUsers.length > 0 ? (
               filteredUsers.map((user) => (
-                <Box key={user.id} border={"1px solid gray"} padding={2}>
+                <Box
+                  key={user.id}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    border: "1px solid gray",
+                    padding: 2,
+                    backgroundColor: darkMode ? "#333" : "#f9f9f9",
+                  }}
+                >
                   <Avatar
-                    sx={{ width: 40, height: 40, cursor: "pointer" }}
+                    sx={{ width: 40, height: 40, cursor: "pointer", marginRight: 2 }}
                     src={
                       user?.profilePictureUrl ||
                       "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
                     }
-                    onClick={() => handleAvatarClick(user.id)}
+                    onClick={() => router.push(`/user/${user.id}`)}
                   />
-                  <Typography variant="h6">{user.name}</Typography>
-                  <Typography variant="body1">{user.email}</Typography>
-                  <Typography variant="body2">{user.school}</Typography>
+                  <Box>
+                    <Typography variant="h6">{user.name}</Typography>
+                    <Typography variant="body1">{user.email}</Typography>
+                    <Typography variant="body2">{user.school}</Typography>
+                  </Box>
                 </Box>
               ))
             ) : searchTerm ? (
               <Typography>No users found</Typography>
             ) : null}
-          </Stack>
-          <Box height={20}>
+          </Box>
+
+          <Box sx={{ marginBottom: 4 }}>
             <Button onClick={handleOpen} size="medium">
               Post Discussion
             </Button>
             <DiscussionPost open={open} handleClose={handleClose} />
           </Box>
+
           {localDiscussions.length > 0 ? (
             localDiscussions.map((discussion) => (
               <DiscussionCard
@@ -209,39 +232,39 @@ export default function Home() {
           ) : (
             <Typography>No posts found</Typography>
           )}
-        </Stack>
+        </Grid>
 
-        <Stack
-          marginRight={20}
-          alignItems={"center"}
-          padding={10}
-          border={"0.2px solid #DCD7DA"}
-          height={400}
-          width={135}
-          spacing={5}
-        >
-          {/* Profile box */}
-          <Button
-            variant="outlined"
-            onClick={isEditing ? handleSaveProfile : handleEditToggle}
+        {/* Right side: Profile */}
+        <Grid item xs={12} md={4}>
+          <Box
+            sx={{
+              padding: 2,
+              border: "0.2px solid #DCD7DA",
+              backgroundColor: darkMode ? "#333" : "#f9f9f9",
+              borderRadius: 2,
+            }}
           >
-            {isEditing ? "Save" : "Edit"}
-          </Button>
+            <Button
+              variant="outlined"
+              onClick={() => setIsEditing(!isEditing)}
+            >
+              {isEditing ? "Save" : "Edit"}
+            </Button>
 
-          <Typography fontSize={20}>
-            {isEditing ? (
-              <TextField
-                name="name"
-                value={editProfile.name}
-                onChange={handleProfileChange}
-                fullWidth
-              />
-            ) : (
-              profile.name
-            )}
-          </Typography>
+            <Typography fontSize={20} sx={{ marginTop: 2 }}>
+              {isEditing ? (
+                <TextField
+                  name="name"
+                  value={editProfile.name}
+                  onChange={(e) => setEditProfile({ ...editProfile, name: e.target.value })}
+                  fullWidth
+                />
+              ) : (
+                profile.name
+              )}
+            </Typography>
 
-          <Avatar
+            <Avatar
             sx={{
               width: 100,
               height: 100,
@@ -251,7 +274,11 @@ export default function Home() {
               profilePicture ||
               "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
             }
-            onClick={handleAvatarClick}
+            onClick={() => {
+              if (isEditing) {
+                fileInputRef.current.click();
+              }
+            }}
           />
           <input
             accept="image/*"
@@ -261,52 +288,52 @@ export default function Home() {
             ref={fileInputRef}
             onChange={handleFileChange}
           />
+            <Stack spacing={2} sx={{ marginTop: 3 }}>
+              <Box>
+                <Typography>Email:</Typography>
+                {isEditing ? (
+                  <TextField
+                    name="email"
+                    value={editProfile.email}
+                    onChange={(e) => setEditProfile({ ...editProfile, email: e.target.value })}
+                    fullWidth
+                  />
+                ) : (
+                  <Typography>{profile.email}</Typography>
+                )}
+              </Box>
 
-          <Stack mr={35}>
-            <Stack direction={"row"} spacing={0.5}>
-              <Typography>Email:</Typography>
-              {isEditing ? (
-                <TextField
-                  name="email"
-                  value={editProfile.email}
-                  onChange={handleProfileChange}
-                  fullWidth
-                />
-              ) : (
-                <Typography>{profile.email}</Typography>
-              )}
-            </Stack>
+              <Box>
+                <Typography>School:</Typography>
+                {isEditing ? (
+                  <TextField
+                    name="school"
+                    value={editProfile.school}
+                    onChange={(e) => setEditProfile({ ...editProfile, school: e.target.value })}
+                    fullWidth
+                  />
+                ) : (
+                  <Typography>{profile.school}</Typography>
+                )}
+              </Box>
 
-            <Stack direction={"row"} spacing={0.5}>
-              <Typography>School:</Typography>
-              {isEditing ? (
-                <TextField
-                  name="school"
-                  value={editProfile.school}
-                  onChange={handleProfileChange}
-                  fullWidth
-                />
-              ) : (
-                <Typography>{profile.school}</Typography>
-              )}
+              <Box>
+                <Typography>Age:</Typography>
+                {isEditing ? (
+                  <TextField
+                    name="age"
+                    value={editProfile.age}
+                    onChange={(e) => setEditProfile({ ...editProfile, age: e.target.value })}
+                    fullWidth
+                  />
+                ) : (
+                  <Typography>{profile.age}</Typography>
+                )}
+              </Box>
             </Stack>
-
-            <Stack direction={"row"} spacing={0.5}>
-              <Typography>Age:</Typography>
-              {isEditing ? (
-                <TextField
-                  name="age"
-                  value={editProfile.age}
-                  onChange={handleProfileChange}
-                  fullWidth
-                />
-              ) : (
-                <Typography>{profile.age}</Typography>
-              )}
-            </Stack>
-          </Stack>
-        </Stack>
-      </Stack>
-    </div>
+          </Box>
+        </Grid>
+      </Grid>
+    </Box>
   );
 }

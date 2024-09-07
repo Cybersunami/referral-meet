@@ -5,16 +5,15 @@ import { Box, Button, Typography, Avatar } from "@mui/material";
 import { formatDistanceToNow, format } from "date-fns";
 import { deleteDiscussionPost } from "../firebasefunctions/poststorage";
 import { auth } from "../lib/firebase";
-import {  useUser } from "../firebasefunctions/userdata";
+import { useUser } from "../firebasefunctions/userdata";
 
 const DiscussionCard = ({ discussion, onDelete }) => {
-  const [loading, setLoading] = useState(false)
-  const [otherUser, setOtherUser] = useState(null)
+  const [loading, setLoading] = useState(false);
+  const [otherUser, setOtherUser] = useState(null);
   const currentUser = auth.currentUser;
-  const {user, loading:userLoading} = useUser(discussion.userId);
+  const { user, loading: userLoading } = useUser(discussion.userId);
   const router = useRouter();
 
-  
   function formatTimestamp(timestamp) {
     if (!timestamp) return "";
     const date = timestamp.toDate();
@@ -23,7 +22,7 @@ const DiscussionCard = ({ discussion, onDelete }) => {
     if (isLessThanDayOld) {
       return formatDistanceToNow(date, { addSuffix: true });
     } else {
-      return format(date, "h:mm a");
+      return format(date, "MMM d, yyyy, h:mm a");
     }
   }
 
@@ -45,15 +44,16 @@ const DiscussionCard = ({ discussion, onDelete }) => {
       <Typography>{discussion?.content}</Typography>
 
       <Box display="flex" alignItems="center" mt={2}>
-        {!userLoading ? (<Avatar
-          sx={{ width: 40, height: 40, cursor: "pointer" }}
-          src={
-            user?.profilePictureUrl ||
-            "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
-          }
-          onClick={handleAvatarClick}
-          
-        />) : (
+        {!userLoading ? (
+          <Avatar
+            sx={{ width: 40, height: 40, cursor: "pointer" }}
+            src={
+              user?.profilePictureUrl ||
+              "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+            }
+            onClick={handleAvatarClick}
+          />
+        ) : (
           <Typography>Loading</Typography>
         )}
         <Typography ml={2}>{discussion?.name}</Typography>

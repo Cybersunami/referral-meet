@@ -6,10 +6,10 @@ import { createTheme } from '@mui/material/styles';
 let theme = createTheme({
   palette: {
     primary: {
-      main: '#f8f8ff', 
+      main: '#7A3803', 
     },
     secondary: {
-      main: '#000000', 
+      main: '#B56727', 
     },
   
   },
@@ -22,7 +22,7 @@ const Hero = () => {
     <ThemeProvider theme={theme}>
     <Box
       sx={{
-        backgroundColor: 'lightslategrey',
+        backgroundColor: '#8D4004',
         color: 'whitesmoke',
         padding: '100px 0',
         textAlign: 'center',

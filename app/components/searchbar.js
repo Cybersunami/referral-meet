@@ -1,13 +1,22 @@
-"use client";
+import React, { useState } from 'react';
 import { TextField } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { styled, alpha } from '@mui/material/styles';
 import InputBase from '@mui/material/InputBase';
 
-const SearchBar = ({ onSearch }) => {
+const SearchBar = React.memo(({ onSearch, searchTerm }) => {
+
+  const [inputValue, setInputValue] = useState('')
+  const handleInputChange = (event) => {
+      const value = event.target.value
+      setInputValue(value)
+      onSearch(inputValue);
+  };
+
   const Search = styled('div')(({ theme }) => ({
     position: 'relative',
     borderRadius: theme.shape.borderRadius,
+    border: '1px solid',
     backgroundColor: alpha(theme.palette.common.white, 0.15),
     '&:hover': {
       backgroundColor: alpha(theme.palette.common.white, 0.25),
@@ -19,6 +28,7 @@ const SearchBar = ({ onSearch }) => {
       width: 'auto',
     },
   }));
+
   const SearchIconWrapper = styled('div')(({ theme }) => ({
     padding: theme.spacing(0, 2),
     height: '100%',
@@ -28,13 +38,12 @@ const SearchBar = ({ onSearch }) => {
     alignItems: 'center',
     justifyContent: 'center',
   }));
-  
+
   const StyledInputBase = styled(InputBase)(({ theme }) => ({
     color: 'inherit',
     width: '100%',
     '& .MuiInputBase-input': {
       padding: theme.spacing(1, 1, 1, 0),
-      // vertical padding + font size from searchIcon
       paddingLeft: `calc(1em + ${theme.spacing(4)})`,
       transition: theme.transitions.create('width'),
       [theme.breakpoints.up('sm')]: {
@@ -45,19 +54,20 @@ const SearchBar = ({ onSearch }) => {
       },
     },
   }));
-  
-  
+
   return (
     <Search>
-            <SearchIconWrapper>
-              <SearchIcon />
-            </SearchIconWrapper>
-            <StyledInputBase
-              placeholder="Search…"
-              inputProps={{ 'aria-label': 'search' }}
-            />
-          </Search>
+      <SearchIconWrapper>
+        <SearchIcon />
+      </SearchIconWrapper>
+      <StyledInputBase
+        placeholder="Search…"
+        inputProps={{ 'aria-label': 'search' }}
+        value={inputValue} 
+        onChange={handleInputChange} 
+      />
+    </Search>
   );
-};
+});
 
 export default SearchBar;
